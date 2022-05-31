@@ -21,19 +21,33 @@ void fft(std::complex<double>  FFT_p[], std::complex<double>  p[], int n){
 
     fft(FFT_U, U, n/2);
     fft(FFT_V, V, n/2);
+     
+    std::complex<double>  w,w_n;
+    w_n = cos(2*pi/n) + 1j * sin(2*pi/n);
+    w = 1;
 
-    /**
-    if (n == 8){
-        std::cout << "fft p " << std::endl;
-        for (int i = 0; i<n/2; i++){
-            std::cout << FFT_U[i];
-        }
-        for (int i = 0; i<n/2; i++){
-            std::cout << FFT_V[i];
-        }
-        std::cout << ' '<< std::endl;
+    for (int i = 0; i<n/2; i++){
+        FFT_p[i] = FFT_U[i] + w*FFT_V[i];
+        FFT_p[i + n/2] = FFT_U[i] - w*FFT_V[i];
+        w = w * w_n;
     }
-    **/
+}
+
+void order_fft(std::complex<double>  FFT_p[], std::complex<double>  p[], int n){
+    if (n==1){
+        for (int i=0; i<n; i++){
+            FFT_p[i] = p[i];
+        }
+        return;
+    }
+    std::complex<double>  U[n/2],V[n/2],FFT_U[n/2],FFT_V[n/2];
+    for (int i=0; i<n/2; i++){
+        U[i] = p[i];
+        V[i] = p[i+n/2];
+    }
+
+    fft(FFT_U, U, n/2);
+    fft(FFT_V, V, n/2);    
     
     std::complex<double>  w,w_n;
     w_n = cos(2*pi/n) + 1j * sin(2*pi/n);
@@ -72,7 +86,7 @@ void thread_fft(int begin, int end, std::complex<double>*  FFT_p, std::complex<d
     std::cout << ' '<< std::endl;
     **/
 
-    fft(newfftp, newp, n);
+    order_fft(newfftp, newp, n);
 
     /**
     std::cout << "thread_fft newfftp" << std::endl;
@@ -106,11 +120,17 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
     std::cout << "order" << std::endl;
     **/
     
-
     std::complex<double>  ordered_p[n];
     for (int i = 0; i < n; i++){
         ordered_p[i] = p[order[i]];
     }
+
+    /**
+    for (int i = 0; i < n; i++){
+        std::cout << ordered_p[i];
+    }
+    std::cout << "order p" << std::endl;
+    **/
     
     int thread_n = n / num_threads;
     std::vector<std::thread> l_thread(num_threads - 1);
@@ -128,28 +148,39 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
     }
     thread_fft(begin, end, FFT_p, ordered_p);
     
-    //thread_fft(0, n/2, FFT_p, ordered_p);
-    //thread_fft(0, n, FFT_p, ordered_p);
-
+    /**
+    for (int i = 0; i < n; i++){
+        std::cout << FFT_p[i];
+    }
+    std::cout << "pfft FFT p" << std::endl;
+    **/
     
-    int m = n/num_threads;
+    int m = n/num_threads*2;
     for (int thread=0; thread < log2(num_threads); thread++){
+        int begin,end;
+        begin = 0;
+        end = m;
+        while (end <= n){
+            std::complex<double>  FFT_U[m/2],FFT_V[m/2];
+            for (int i=0; i<m/2; i++){
+                FFT_U[i] = FFT_p[begin+i];
+                FFT_V[i] = FFT_p[begin+i+m/2];
+            }
 
-        std::complex<double>  FFT_U[m/2],FFT_V[m/2];
-        for (int i=0; i<m/2; i++){
-            FFT_U[i] = FFT_p[i];
-            FFT_V[i] = FFT_p[i+m/2];
+            std::complex<double>  w,w_n;
+            w_n = cos(2*pi/m) + 1j * sin(2*pi/m);
+            w = 1;
+
+            for (int i = 0; i<m/2; i++){
+                FFT_p[begin+i] = FFT_U[i] + w*FFT_V[i];
+                FFT_p[begin+i + m/2] = FFT_U[i] - w*FFT_V[i];
+                w = w * w_n;
+            }
+
+            begin +=m;
+            end +=m;
         }
-
-        std::complex<double>  w,w_n;
-        w_n = cos(2*pi/m) + 1j * sin(2*pi/m);
-        w = 1;
-
-        for (int i = 0; i<m/2; i++){
-            FFT_p[i] = FFT_U[i] + w*FFT_V[i];
-            FFT_p[i + m/2] = FFT_U[i] - w*FFT_V[i];
-            w = w * w_n;
-        }
+        m *=2;
     }
     
 }
@@ -158,12 +189,14 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
 int main(){
     int n=8;
     std::complex<double>  p[n]{std::complex<double>(0,0),std::complex<double>(1,1),std::complex<double>(3,3),std::complex<double>(4,4),
-                               std::complex<double>(4,4),std::complex<double>(3,3),std::complex<double>(1,1),std::complex<double>(0,0),};
+                               std::complex<double>(4,4),std::complex<double>(3,3),std::complex<double>(1,1),std::complex<double>(0,0)};
     std::complex<double>  fft_p[n];
+    /**
     std::cout << "origin" << std::endl;
     for (int i = 0; i<n; i++){
         std::cout << p[i] << std::endl;
     }
+    **/
     fft(fft_p,p,n);
     std::cout << "fft" << std::endl;
     for (int i = 0; i<n; i++){
@@ -174,14 +207,13 @@ int main(){
     std::complex<double>  p2[n]{std::complex<double>(0,0),std::complex<double>(1,1),std::complex<double>(3,3),std::complex<double>(4,4),
                                std::complex<double>(4,4),std::complex<double>(3,3),std::complex<double>(1,1),std::complex<double>(0,0),};
     std::complex<double>  fft_p2[n];
-    pfft(fft_p2,p2,n,2);
+    pfft(fft_p2,p2,n,8);
     
     std::cout << "pfft" << std::endl;
     for (int i = 0; i<n; i++){
-        std::cout << fft_p[i];
+        std::cout << fft_p2[i];
     }
     std::cout << ' '<< std::endl;
-    
     return 0;
 
 }
