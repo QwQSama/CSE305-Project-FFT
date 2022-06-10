@@ -152,7 +152,7 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
 
 
 int main(){
-    int n=32768;
+    int n=pow(2,13);
     int num_thread = 4;
     std::complex<double>  p0[8]{std::complex<double>(0,0),std::complex<double>(1,1),std::complex<double>(3,3),std::complex<double>(4,4),
                                std::complex<double>(4,4),std::complex<double>(3,3),std::complex<double>(1,1),std::complex<double>(0,0)};
@@ -189,6 +189,9 @@ int main(){
     }
     if (!f){
         std::cout << "test not equal" << std::endl;
+    }
+    else{
+        std::cout << "test pass" << std::endl;
     }
     return 0;
 
