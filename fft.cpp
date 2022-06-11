@@ -22,9 +22,9 @@ void fft(std::complex<double>  FFT_p[], std::complex<double>  p[], int n){
 
     fft(FFT_U, U, n/2);
     fft(FFT_V, V, n/2);
-     
+
     std::complex<double>  w,w_n;
-    w_n = cos(2*pi/n) + 1j * sin(2*pi/n);
+    w_n = cos(2*pi/n), sin(2*pi/n);
     w = 1;
 
     for (int i = 0; i<n/2; i++){
@@ -86,7 +86,7 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
         fft(FFT_p,p,n);
         return;
     } */
-    
+
     std::complex<double>  ordered_p[n];
     order_fft(ordered_p,p,n,num_threads);
 
@@ -96,7 +96,7 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
     }
     std::cout << "order p" << std::endl;
     **/
-    
+
     int thread_n = n / num_threads;
     std::vector<std::thread> l_thread(num_threads - 1);
     int begin,end;
@@ -112,14 +112,14 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
         l_thread[i].join();
     }
     thread_fft(begin, end, &FFT_p[0], &ordered_p[0]);
-    
+
     /**
     for (int i = 0; i < n; i++){
         std::cout << FFT_p[i];
     }
     std::cout << "pfft FFT p" << std::endl;
     **/
-    
+
     int m = n/num_threads*2;
     for (int thread=0; thread < log2(num_threads); thread++){
         int begin,end;
@@ -132,9 +132,8 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
                 FFT_V[i] = FFT_p[begin+i+m/2];
             }
 
-            std::complex<double>  w,w_n;
-            w_n = cos(2*pi/m) + 1j * sin(2*pi/m);
-            w = 1;
+            std::complex<double>  w(1,0);
+            std::complex<double>  w_n(cos(2*pi/m), sin(2*pi/m));
 
             for (int i = 0; i<m/2; i++){
                 FFT_p[begin+i] = FFT_U[i] + w*FFT_V[i];
@@ -147,17 +146,17 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
         }
         m *=2;
     }
-    
+
 }
 
 
 int main(){
-    int n=pow(2,13);
+    int n = pow(2,13);
     int num_thread = 4;
     std::complex<double>  p0[8]{std::complex<double>(0,0),std::complex<double>(1,1),std::complex<double>(3,3),std::complex<double>(4,4),
-                               std::complex<double>(4,4),std::complex<double>(3,3),std::complex<double>(1,1),std::complex<double>(0,0)};
-    std::complex<double>  fft_p[n],p[n],pfft_p[n],offt_p[n];
-    
+                                std::complex<double>(4,4),std::complex<double>(3,3),std::complex<double>(1,1),std::complex<double>(0,0)};
+    std::complex<double>  fft_p[n],p[n],pfft_p[n], offt_p[n];
+
     std::cout << "hi" << std::endl;
     int js=0;
     for (int i=0; i<n; i++){
@@ -170,15 +169,15 @@ int main(){
     auto start = std::chrono::steady_clock::now();
     fft(fft_p,p,n);
     auto finish = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();          
+    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
     std::cout << "Time for fft is " << elapsed << " microseconds" << std::endl;
 
     start = std::chrono::steady_clock::now();
     pfft(pfft_p,p,n,num_thread);
     finish = std::chrono::steady_clock::now();
-    elapsed = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();       
+    elapsed = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
     std::cout << "Time for pfft is " << elapsed << " microseconds" << std::endl;
-    
+
     std::cout << "test" << std::endl;
     bool f = true;
     for (int i = 0; i<n; i++){
