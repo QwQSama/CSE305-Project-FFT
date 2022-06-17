@@ -5,6 +5,35 @@ using namespace std;
 #include <string>
 #include <vector>
 #include <sstream>
+#include <numeric>
+#include <algorithm>
+
+
+double error(complex<double>* p1, complex<double>* p2, int n){
+    double total_error = 0;
+    for (int i = 0; i < n; i ++){
+        total_error += pow(p1[i].real() - p2[i].real(), 2);
+    }
+    return sqrt(total_error);
+}
+
+void compress(complex<double>* p, int n){
+    vector<complex<double>> vect(n);
+    for (int i = 0; i < n; i ++){
+        vect[i] = p[i];
+    } // build vector so we can use builtin functions
+
+    vector<int> idxs(n);
+    iota(idxs.begin(), idxs.end(), 0);
+    stable_sort(idxs.begin(), idxs.end(), [&vect](size_t i1, size_t i2) {return vect[i1].real() < vect[i2].real();});
+
+    for (int i = 0; i < n; i++){
+        if (std::count(idxs.begin(), idxs.end(), i) == 0){
+            p[i] = 0;
+        }
+    }
+
+}
 
 void retrieve_data(vector<vector<double>> &temp_content, vector<vector<string>> &time_content){
     string temp_name, date_name;
@@ -85,45 +114,77 @@ int main()
     vector<vector<double>> temp_content;
     vector<vector<string>> time_content;
 
+    // retrieve temperature data into a vector and corresponding time values in a separate vector
     retrieve_data(temp_content, time_content);
 
-
-//    while (highest_power_2 * 2 <= n) {
-//        highest_power_2 *= 2;
-//    }
+    // This algorithm requires a power of 2 for n
+    // we choose 8192 as their are 8,760 hours in a year and this corresponds to almost a full yearly cycle.
     unsigned long long n = 8192;
 
-    complex<double> p[n], fft_p[n];
+    complex<double> p[n], fft_p[n], pfft_p[n];
     for (int z = 0; z < n;z ++){
-        p[z] = complex<double> (temp_content[z][1]);
+        p[z] = complex<double> (temp_content[z][1]); // build a complex array required for the algorithm
     }
 
-    fft(fft_p, p, n);
+    fft(fft_p, p, n); // run fft on this array. fft_p is our output.
+    pfft(pfft_p, p, n, 4); // run pfft on this array with 4 threads. pfft_p is our output.
 
-    for (int z = 0; z < n; z++){
-        if (std::abs(fft_p[z]) < 50.) {
-            fft_p[z] = 0.;
-        }
+
+    // here we compress fft_p and pfft_p to keep only large values.
+    // we first keep the original file to compare
+    complex<double> og_fft[n];
+    for (int z = 0; z < n;z ++){
+        og_fft[z] = fft_p[z];
     }
-    ofstream myfile("fft_csv.csv");
-    int vsize = 8192;
-    myfile << "fft values\n";
-    for(int n=0; n<vsize; n++)
+
+    compress(fft_p, 20); // keep 20 largest values
+    compress(pfft_p, 20); // same
+
+
+    // now we write the results to a file
+    ofstream fft_file("fft.csv");
+    ofstream pfft_file("pfft.csv");
+    fft_file << "fft values\n";
+    for(int i=0; i < n; i++)
     {
-        myfile << fft_p[n].real() << endl;
+        fft_file << fft_p[i].real() << endl;
     }
-
-    std::complex<double> approx[8192];
-    inverse_dft(approx, fft_p, 8192);
-
-    ofstream myfile2("approx.csv");
-    int vsize2 = 8192;
-    myfile2 << "approximation\n";
-    for(int n=0; n<vsize2; n++)
+    pfft_file << "pfft values\n";
+    for(int i=0; i<n; i++)
     {
-        myfile2 << approx[n].real() << endl;
+        pfft_file << pfft_p[i].real() << endl;
     }
 
+
+    // now let's perform inverse fft and retreive original data
+    std::complex<double> approx[n];
+    std::complex<double> p_approx[n];
+    std::complex<double> og_approx[n];
+
+    inverse_dft(og_approx, og_fft, n);
+    inverse_dft(approx, fft_p, n);
+    inverse_dft(p_approx, pfft_p, n);
+
+    ofstream approx_file("approx.csv");
+    approx_file << "approximation\n";
+    for(int i=0; i<n; i++)
+    {
+        approx_file << approx[i].real() << endl;
+    }
+    ofstream p_approx_file("approx.csv");
+    p_approx_file << "approximation\n";
+    for(int i=0; i<n; i++)
+    {
+        p_approx_file << p_approx[i].real() << endl;
+    }
+
+    double og_error = error(og_approx, p, n);
+    double fft_error = error(og_approx, p, n);
+    double pfft_error = error(og_approx, p, n);
+
+    cout << "error for fft then ifft data: " << og_error << endl; // should be small
+    cout << "error for compressed fft data: " << fft_error << endl;
+    cout << "error for compressed parallel fft data: " << pfft_error << endl;
 
 
 

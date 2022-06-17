@@ -150,7 +150,7 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
 
 }
 
-void inverse_dft(std::complex<double>* p, std::complex<double>* fft_p, int n){
+void inverse_dft(std::complex<double>p[], std::complex<double> fft_p[], int n){
     if (n == 1){
         p[0] = fft_p[0];
         return;
@@ -171,8 +171,6 @@ void inverse_dft(std::complex<double>* p, std::complex<double>* fft_p, int n){
         p[j + n/2] = (U[j] - w * V[j]) / 2.;
         w = w * w_n;
     }
-
-
 }
 
 
