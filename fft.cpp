@@ -9,9 +9,10 @@
 
 void fft(std::complex<double>  FFT_p[], std::complex<double>  p[], int n){
     if (n==1){
-        for (int i=0; i<n; i++){
-            FFT_p[i] = p[i];
-        }
+//        for (int i=0; i<n; i++){
+//            FFT_p[i] = p[i];
+//        }
+        FFT_p[0] = p[0];
         return;
     }
     std::complex<double>  U[n/2],V[n/2],FFT_U[n/2],FFT_V[n/2];
@@ -149,8 +150,33 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
 
 }
 
+void inverse_dft(std::complex<double>* p, std::complex<double>* fft_p, int n){
+    if (n == 1){
+        p[0] = fft_p[0];
+        return;
+    }
+    std::complex<double> fft_U[n/2], fft_V[n/2], U[n/2], V[n/2];
+    for (int j = 0; j<= n/2; j++){
+        fft_U[j] = fft_p[2*j];
+        fft_V[j] = fft_p[2 * j + 1];
+    }
+    inverse_dft(U, fft_U, n/2);
+    inverse_dft(V, fft_V, n/2);
 
-int main(){
+    std::complex<double> w_n(cos(2*pi / n), - sin(2 * pi / n));
+    std::complex<double> w(1,0);
+
+    for (int j = 0; j <= n/2; j++){
+        p[j] = (U[j] + w * V[j]) / 2.;
+        p[j + n/2] = (U[j] - w * V[j]) / 2.;
+        w = w * w_n;
+    }
+
+
+}
+
+
+int main2(){
     int n = pow(2,13);
     int num_thread = 4;
     std::complex<double>  p0[8]{std::complex<double>(0,0),std::complex<double>(1,1),std::complex<double>(3,3),std::complex<double>(4,4),
