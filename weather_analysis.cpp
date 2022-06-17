@@ -6,15 +6,11 @@ using namespace std;
 #include <vector>
 #include <sstream>
 
-
-
-int load_and_test()
-{
+void retrieve_data(vector<vector<double>> &temp_content, vector<vector<string>> &time_content){
     string temp_name, date_name;
     temp_name = "new_york_temp.csv";
     date_name = "datetime.csv";
 
-    vector<vector<double>> temp_content;
     vector<double> row;
     string line, word;
 
@@ -42,7 +38,6 @@ int load_and_test()
     else
         cout<<"Could not open the file\n";
 
-    vector<vector<string>> time_content;
     vector<string> srow;
     line = "";
     word = "";
@@ -83,19 +78,54 @@ int load_and_test()
     cout << "date: "<< time_content[0].size() << endl;
     cout << "date: "<< time_content[0][0] << ' ' << time_content[0][1] << endl;
 
+}
 
-    unsigned long long highest_power_2 = 1, n = temp_content.size();
+int main()
+{
+    vector<vector<double>> temp_content;
+    vector<vector<string>> time_content;
+
+    retrieve_data(temp_content, time_content);
+
+
 //    while (highest_power_2 * 2 <= n) {
 //        highest_power_2 *= 2;
 //    }
-    highest_power_2 = 8192;
+    unsigned long long n = 8192;
 
-    complex<double> p[highest_power_2], fft_p[highest_power_2];
-    for (int z = 0; z < highest_power_2; z ++){
+    complex<double> p[n], fft_p[n];
+    for (int z = 0; z < n;z ++){
         p[z] = complex<double> (temp_content[z][1]);
     }
 
-    fft(fft_p, p, highest_power_2);
+    fft(fft_p, p, n);
+
+    for (int z = 0; z < n; z++){
+        if (std::abs(fft_p[z]) < 50.) {
+            fft_p[z] = 0.;
+        }
+    }
+    ofstream myfile("fft_csv.csv");
+    int vsize = 8192;
+    myfile << "fft values\n";
+    for(int n=0; n<vsize; n++)
+    {
+        myfile << fft_p[n].real() << endl;
+    }
+
+    std::complex<double> approx[8192];
+    inverse_dft(approx, fft_p, 8192);
+
+    ofstream myfile2("approx.csv");
+    int vsize2 = 8192;
+    myfile2 << "approximation\n";
+    for(int n=0; n<vsize2; n++)
+    {
+        myfile2 << approx[n].real() << endl;
+    }
+
+
+
 
 
 
