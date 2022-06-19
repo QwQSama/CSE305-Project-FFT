@@ -22,7 +22,7 @@ void fft(std::complex<double>  *FFT_p, std::complex<double>  *p, int n){
 
     fft(FFT_U, U, n/2);
     fft(FFT_V, V, n/2);
-     
+
     std::complex<double>  w;
 
     for (int i = 0; i<n/2; i++){
@@ -84,7 +84,7 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
         fft(FFT_p,p,n);
         return;
     } */
-    
+
     std::complex<double>  ordered_p[n];
     order_fft(ordered_p,p,n,num_threads);
 
@@ -94,7 +94,7 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
     }
     std::cout << "order p" << std::endl;
     **/
-    
+
     int thread_n = n / num_threads;
     std::vector<std::thread> l_thread(num_threads - 1);
     int begin,end;
@@ -110,7 +110,7 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
         l_thread[i].join();
     }
     thread_fft(begin, end, &FFT_p[0], &ordered_p[0]);
-    
+
     int m = n/num_threads*2;
     for (int thread=0; thread < log2(num_threads); thread++){
         int begin,end;
@@ -136,7 +136,7 @@ void pfft(std::complex<double>*  FFT_p, std::complex<double>*  p, int n, int num
         }
         m *=2;
     }
-    
+
 }
 
 void ifft(std::complex<double> *ifftp, std::complex<double> *fft_p, int n){
@@ -144,18 +144,18 @@ void ifft(std::complex<double> *ifftp, std::complex<double> *fft_p, int n){
     for (int i =0; i < n; i++){
         con_fft_p[i] = std::conj(fft_p[i]);
     }
-    
+
     fft(ifftp,con_fft_p,n);
-    
+
     for (int j = 0; j <= n; j++){
         ifftp[j] = ifftp[j]/(n*1.0);
     }
-    
-    
+
+
     for (int i =0; i < n; i++){
-         ifftp[i] = std::conj(ifftp[i]);
+        ifftp[i] = std::conj(ifftp[i]);
     }
-    
+
 }
 
 void ifft_parallel(std::complex<double> *ifftp, std::complex<double> *fft_p, int n, int p ){
@@ -163,26 +163,26 @@ void ifft_parallel(std::complex<double> *ifftp, std::complex<double> *fft_p, int
     for (int i =0; i < n; i++){
         con_fft_p[i] = std::conj(fft_p[i]);
     }
-    
+
     pfft(ifftp,con_fft_p,n,p);
-    
+
     for (int j = 0; j <= n; j++){
         ifftp[j] = ifftp[j]/(n*1.0);
     }
-    
-    
+
+
     for (int i =0; i < n; i++){
-         ifftp[i] = std::conj(ifftp[i]);
+        ifftp[i] = std::conj(ifftp[i]);
     }
-    
+
 }
 
 
-int main(){
+int main2(){
     int n=pow(2,3);
     int num_thread = 2;
     std::complex<double>  p0[8]{std::complex<double>(0,0),std::complex<double>(1,1),std::complex<double>(3,3),std::complex<double>(4,4),
-                               std::complex<double>(4,4),std::complex<double>(3,3),std::complex<double>(1,1),std::complex<double>(0,0)};
+                                std::complex<double>(4,4),std::complex<double>(3,3),std::complex<double>(1,1),std::complex<double>(0,0)};
     std::complex<double>  fft_p[n],p[n],pfft_p[n],offt_p[n],ifft_p[n],ifft_p_s[n];
 
     std::cout << "hi" << std::endl;
@@ -193,31 +193,31 @@ int main(){
         js++;
         p[i] = p0[i];
     }
-    
+
     auto start = std::chrono::steady_clock::now();
     fft(fft_p,p,n);
     auto finish = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();          
+    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
     std::cout << "Time for fft is " << elapsed << " microseconds" << std::endl;
 
     start = std::chrono::steady_clock::now();
     pfft(pfft_p,p,n,num_thread);
     finish = std::chrono::steady_clock::now();
-    elapsed = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();       
+    elapsed = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
     std::cout << "Time for pfft is " << elapsed << " microseconds" << std::endl;
 
     start = std::chrono::steady_clock::now();
     ifft_parallel(ifft_p,fft_p,n,num_thread);
     finish = std::chrono::steady_clock::now();
-    elapsed = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();       
+    elapsed = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
     std::cout << "Time for ifft_parallel is " << elapsed << " microseconds" << std::endl;
 
     start = std::chrono::steady_clock::now();
     ifft(ifft_p_s,fft_p,n);
     finish = std::chrono::steady_clock::now();
-    elapsed = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();       
+    elapsed = std::chrono::duration_cast<std::chrono::microseconds>(finish - start).count();
     std::cout << "Time for ifft_simple is " << elapsed << " microseconds" << std::endl;
-    
+
     std::cout << "test" << std::endl;
     bool f = true;
     for (int i = 0; i<n; i++){
